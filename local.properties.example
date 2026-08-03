@@ -1,0 +1,5 @@
+sdk.dir=C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
+BASE_URL=https://your-dhis2.example.org
+ALERTS_BASE_URL=https://your-climasaude-api.example.org
+MODEL_URL=https://your-model-host.example.org/climasaude.litertlm
+MODEL_SHA256=replace-with-64-character-sha256
