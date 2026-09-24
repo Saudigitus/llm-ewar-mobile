@@ -15,14 +15,23 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,6 +60,8 @@ internal fun AppTextField(
     suffix: String? = null,
     singleLine: Boolean = true,
     minLines: Int = 1,
+    readOnly: Boolean = false,
+    placeholder: String? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default
@@ -59,6 +70,8 @@ internal fun AppTextField(
         value,
         onValueChange,
         label = { Text(label) },
+        placeholder = placeholder?.let { { Text(it, color = Muted) } },
+        readOnly = readOnly,
         supportingText = supportingText?.let { { Text(it) } },
         isError = isError,
         leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
@@ -78,10 +91,61 @@ internal fun AppTextField(
             unfocusedBorderColor = Outline,
             unfocusedLeadingIconColor = Muted,
             focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White
+            unfocusedContainerColor = Color.White,
+            errorContainerColor = Color.White
         ),
         modifier = modifier.fillMaxWidth()
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun <T> AppDropdownField(
+    options: List<Pair<T, String>>,
+    selected: T?,
+    onSelect: (T?) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    placeholder: String? = null,
+    allowClear: Boolean = false
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded, { expanded = it }, modifier) {
+        AppTextField(
+            options.firstOrNull { it.first == selected }?.second.orEmpty(),
+            {},
+            label = label,
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            leadingIcon = leadingIcon,
+            placeholder = placeholder,
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }
+        )
+        ExposedDropdownMenu(
+            expanded,
+            { expanded = false },
+            containerColor = Color.White
+        ) {
+            if (allowClear && selected != null) DropdownMenuItem(
+                text = { Text("Limpar seleção", color = Muted) },
+                onClick = { onSelect(null); expanded = false }
+            )
+            options.forEach { (value, text) ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text,
+                            fontWeight = if (value == selected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (value == selected) Teal else Color.Unspecified
+                        )
+                    },
+                    onClick = { onSelect(value); expanded = false },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
+        }
+    }
 }
 
 /** Pill-shaped search box with a clear button; the keyboard's search key just hides the keyboard. */

@@ -14,6 +14,7 @@ import org.saudigitus.climasaude.domain.sync.SyncCoordinator
 import org.saudigitus.climasaude.platform.IosAutoSyncScheduler
 import org.saudigitus.climasaude.platform.NudgeScheduler
 import org.saudigitus.climasaude.platform.SecureCredentials
+import org.saudigitus.climasaude.platform.UnavailableLocationProvider
 import org.saudigitus.climasaude.presentation.ClimaSaudeApp
 
 private val connectivityScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -28,6 +29,7 @@ fun startIosApp(
         appModule(
             iosDatabaseBuilder(), credentials, nudgeScheduler, IosAutoSyncScheduler(),
             UnavailableTriageModel(),
+            UnavailableLocationProvider(),
             baseUrl, alertsBaseUrl.takeIf { it.isNotBlank() })
     )
 }

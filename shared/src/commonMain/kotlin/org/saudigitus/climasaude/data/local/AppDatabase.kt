@@ -19,7 +19,7 @@ import org.saudigitus.climasaude.data.local.entity.TriageTranslationEntity
 
 @Database(
     entities = [ProfileEntity::class, AreaEntity::class, AlertEntity::class, ChildEntity::class, TriageEntity::class, TriageTranslationEntity::class],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)

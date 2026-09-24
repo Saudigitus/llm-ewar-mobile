@@ -7,6 +7,7 @@ import org.koin.dsl.module
 import org.saudigitus.climasaude.data.local.AppDatabase
 import org.saudigitus.climasaude.domain.ai.TriageModel
 import org.saudigitus.climasaude.platform.AutoSyncScheduler
+import org.saudigitus.climasaude.platform.LocationProvider
 import org.saudigitus.climasaude.platform.NudgeScheduler
 import org.saudigitus.climasaude.platform.SecureCredentials
 
@@ -16,11 +17,12 @@ fun appModule(
     nudgeScheduler: NudgeScheduler,
     autoSyncScheduler: AutoSyncScheduler,
     triageModel: TriageModel,
+    locationProvider: LocationProvider,
     baseUrl: String,
     alertsBaseUrl: String?
 ): Module = module {
     includes(
-        platformModule(credentials, nudgeScheduler, autoSyncScheduler, triageModel),
+        platformModule(credentials, nudgeScheduler, autoSyncScheduler, triageModel, locationProvider),
         databaseModule(databaseBuilder),
         networkModule(baseUrl, alertsBaseUrl),
         repositoryModule,

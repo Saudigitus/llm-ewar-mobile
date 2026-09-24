@@ -19,6 +19,9 @@ interface TriageTranslationDao {
         language: String
     ): TriageTranslationEntity?
 
+    @Query("DELETE FROM triage_translations WHERE userId = :userId AND triageId = :triageId")
+    suspend fun deleteForTriage(userId: String, triageId: String)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(translation: TriageTranslationEntity)
 }

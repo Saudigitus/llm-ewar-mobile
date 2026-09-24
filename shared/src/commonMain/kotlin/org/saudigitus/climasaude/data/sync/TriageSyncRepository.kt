@@ -63,7 +63,10 @@ class TriageSyncRepository(
                     sex = incoming.sex ?: existing?.sex,
                     caregiver = incoming.caregiver ?: existing?.caregiver,
                     community = incoming.community ?: existing?.community,
-                    areaId = incoming.areaId ?: existing?.areaId
+                    areaId = incoming.areaId ?: existing?.areaId,
+                    latitude = incoming.latitude ?: existing?.latitude,
+                    longitude = incoming.longitude ?: existing?.longitude,
+                    locationAccuracy = incoming.locationAccuracy ?: existing?.locationAccuracy
                 )
             )
             downloadedChildren++

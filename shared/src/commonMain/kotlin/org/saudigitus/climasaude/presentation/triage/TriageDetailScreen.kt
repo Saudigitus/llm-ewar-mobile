@@ -8,42 +8,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.saudigitus.climasaude.domain.model.AppLanguage
-import org.saudigitus.climasaude.domain.model.Child
 import org.saudigitus.climasaude.domain.model.Triage
+import org.saudigitus.climasaude.domain.model.TriageGuidance
 import org.saudigitus.climasaude.presentation.theme.Ink
 import org.saudigitus.climasaude.presentation.theme.Muted
 import org.saudigitus.climasaude.presentation.theme.Teal
-import org.saudigitus.climasaude.utils.text.shortDate
 import org.saudigitus.climasaude.utils.text.yesNo
 
 @Composable
 fun TriageDetailScreen(
-    triage: Triage, child: Child?, justSaved: Boolean, onViewHistory: () -> Unit,
+    triage: Triage, justSaved: Boolean, onViewHistory: () -> Unit,
     language: AppLanguage, translating: Boolean, translationError: String?,
     onTranslate: (AppLanguage) -> Unit,
+    generating: Boolean = false,
+    draft: TriageGuidance? = null,
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-        Text(
-            listOfNotNull(child?.name, shortDate(triage.recordedAt)).joinToString(" · "),
-            color = Muted
-        )
-        Spacer(Modifier.height(20.dp))
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             shape = RoundedCornerShape(20.dp)
@@ -66,7 +66,9 @@ fun TriageDetailScreen(
             }
         }
         Spacer(Modifier.height(18.dp))
-        RecommendationCard(triage, language, translating, translationError, onTranslate)
+        RecommendationCard(
+            triage, language, translating, translationError, generating, draft, onTranslate
+        )
         Spacer(Modifier.height(20.dp))
         if (justSaved) Button(
             onClick = onViewHistory, modifier = Modifier.fillMaxWidth().height(54.dp),
@@ -83,10 +85,12 @@ private fun DetailRow(label: String, value: String) {
 @Composable
 private fun RecommendationCard(
     triage: Triage, language: AppLanguage, translating: Boolean,
-    translationError: String?, onTranslate: (AppLanguage) -> Unit
+    translationError: String?, generating: Boolean, draft: TriageGuidance?,
+    onTranslate: (AppLanguage) -> Unit
 ) {
-    val translation = triage.translations[language]
-    val steps = translation?.steps ?: triage.recommendationSteps.ifEmpty {
+    val writing = draft.takeIf { generating }
+    val translation = triage.translations[language].takeIf { writing == null }
+    val steps = writing?.steps ?: translation?.steps ?: triage.recommendationSteps.ifEmpty {
         triage.recommendationBody?.lines()?.map { it.trim().removePrefix("• ") }.orEmpty()
     }
     Card(
@@ -106,7 +110,8 @@ private fun RecommendationCard(
             )
             Spacer(Modifier.height(9.dp))
             Text(
-                translation?.title ?: triage.recommendationTitle ?: "Orientação pendente",
+                writing?.title?.ifBlank { "A escrever…" } ?: translation?.title
+                    ?: triage.recommendationTitle ?: "Orientação pendente",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = Ink
@@ -118,6 +123,23 @@ private fun RecommendationCard(
                     "${index + 1}. $step", color = Ink, style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(vertical = 5.dp)
                 )
+            }
+            if (generating) {
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        Modifier.size(16.dp), color = Teal, strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        if (writing == null) "A preparar a recomendação da IA. Pode continuar a trabalhar."
+                        else "A IA está a escrever…",
+                        color = Muted, style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            } else triage.recommendationSource?.let { source ->
+                Spacer(Modifier.height(10.dp))
+                Text(source, color = Muted, style = MaterialTheme.typography.bodySmall)
             }
             if (triage.recommendationAlertIds.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
@@ -141,6 +163,7 @@ private fun RecommendationCard(
                     FilterChip(
                         selected = language == option,
                         onClick = { onTranslate(option) },
+                        enabled = !generating,
                         label = { Text(label) },
                         modifier = Modifier.padding(end = 8.dp)
                     )

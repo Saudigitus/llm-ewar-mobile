@@ -64,16 +64,40 @@ object TriagePrompt {
     }
 
     fun parse(text: String, source: String, alertIds: List<String> = emptyList()): TriageGuidance? {
-        val lines =
-            text.lines().map { it.trim().trimStart('*', '-', ' ') }.filter { it.isNotBlank() }
-        val title =
-            lines.firstOrNull { it.startsWith("TITULO:", true) }?.substringAfter(':')?.trim()
-        val steps = lines.filter { it.matches(Regex("(?i)^PASSO\\s+[1-5]:.*")) }
-            .map { it.substringAfter(':').trim() }
+        val (title, steps) = read(text)
         if (title.isNullOrBlank() || title.length > 120 || steps.size !in 2..5 || steps.any { it.isBlank() || it.length > 300 }) return null
         if (Regex("(?i)\\b\\d+(?:[.,]\\d+)?\\s*(?:mg|ml|g)\\b").containsMatchIn(text)) return null
         return TriageGuidance(title, steps, source, alertIds)
     }
+
+    fun draft(text: String): TriageGuidance? {
+        val (title, steps) = read(finishedLines(text))
+        if (title.isNullOrBlank() && steps.isEmpty()) return null
+        return TriageGuidance(title.orEmpty(), steps, "")
+    }
+
+    fun hasAllSteps(text: String): Boolean = read(finishedLines(text)).second.size >= MAX_STEPS
+
+    fun finishedLines(text: String): String =
+        if (text.endsWith('\n')) text else text.substringBeforeLast('\n', "")
+
+    private fun read(text: String): Pair<String?, List<String>> {
+        val lines = text.replace("**", "")
+            .replace(Regex(";?\\s*(?=PASSO\\s*\\d+\\s*:)"), "\n")
+            .lines()
+            .map { it.trim().trimStart('*', '-', '#', ' ') }
+            .filter { it.isNotBlank() }
+        val title = lines.firstOrNull { TITLE.containsMatchIn(it) }
+            ?.let { TITLE.replace(it, "") }?.trim()?.trimEnd(';')
+        val steps = lines.mapNotNull { STEP.find(it) }
+            .filter { it.groupValues[1].toInt() in 1..MAX_STEPS }
+            .map { it.groupValues[2].trim().trimEnd(';') }
+        return title to steps
+    }
+
+    private const val MAX_STEPS = 5
+    private val TITLE = Regex("(?i)^T[IÍ]TULO\\s*:")
+    private val STEP = Regex("(?i)^PASSO\\s*(\\d+)\\s*[:.)-]\\s*(.*)")
 
     fun hasUrgentReferral(guidance: TriageGuidance): Boolean =
         guidance.steps.any {

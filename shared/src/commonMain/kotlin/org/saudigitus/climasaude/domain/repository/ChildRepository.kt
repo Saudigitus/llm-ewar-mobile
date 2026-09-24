@@ -1,5 +1,7 @@
 package org.saudigitus.climasaude.domain.repository
 
+import org.saudigitus.climasaude.domain.model.GeoPoint
+
 interface ChildRepository {
     /** Saves a child for the active profile and returns the new child ID. */
     suspend fun addChild(
@@ -7,7 +9,7 @@ interface ChildRepository {
         ageYears: Int?,
         sex: String?,
         caregiver: String?,
-        community: String?,
+        location: GeoPoint?,
         areaId: String?
     ): String
 }

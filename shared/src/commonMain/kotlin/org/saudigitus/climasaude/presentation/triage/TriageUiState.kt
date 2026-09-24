@@ -3,7 +3,9 @@ package org.saudigitus.climasaude.presentation.triage
 import org.saudigitus.climasaude.domain.model.AppLanguage
 import org.saudigitus.climasaude.domain.model.CatchmentArea
 import org.saudigitus.climasaude.domain.model.ChildFollowUp
+import org.saudigitus.climasaude.domain.model.GeoPoint
 import org.saudigitus.climasaude.domain.model.Triage
+import org.saudigitus.climasaude.domain.model.TriageGuidance
 
 data class TriageUiState(
     val children: List<ChildFollowUp> = emptyList(),
@@ -16,7 +18,13 @@ data class TriageUiState(
     val error: String? = null,
     val recommendationLanguage: AppLanguage = AppLanguage.PORTUGUESE,
     val translating: Boolean = false,
-    val translationError: String? = null
+    val translationError: String? = null,
+    val generatingIds: Set<String> = emptySet(),
+    val drafts: Map<String, TriageGuidance> = emptyMap(),
+    val childLocation: GeoPoint? = null,
+    val locating: Boolean = false,
+    val locationError: String? = null,
+    val locationPermissionNeeded: Boolean = false
 ) {
     val triageCount: Int get() = children.sumOf { it.triages.size }
     val selectedTriage: Triage? get() = selectedTriageId?.let(::triage)

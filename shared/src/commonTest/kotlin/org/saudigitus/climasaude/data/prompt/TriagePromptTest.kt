@@ -50,4 +50,29 @@ class TriagePromptTest {
         assertEquals(listOf("active"), parsed?.alertIds)
         assertEquals(2, parsed?.steps?.size)
     }
+
+    @Test
+    fun acceptsCommonModelFormatting() {
+        val parsed = TriagePrompt.parse(
+            "**TÍTULO:** Acompanhar\nPASSO 1: Avalie a febre.; PASSO 2: Siga o protocolo APE.",
+            "IA local"
+        )
+        assertEquals("Acompanhar", parsed?.title)
+        assertEquals(listOf("Avalie a febre.", "Siga o protocolo APE."), parsed?.steps)
+    }
+
+    @Test
+    fun draftShowsOnlyFinishedLines() {
+        val draft = TriagePrompt.draft("TITULO: Acompanhar\nPASSO 1: Avalie a febre.\nPASSO 2: Sig")
+        assertEquals("Acompanhar", draft?.title)
+        assertEquals(listOf("Avalie a febre."), draft?.steps)
+        assertEquals(null, TriagePrompt.draft("TITULO: Acomp"))
+    }
+
+    @Test
+    fun stopsAfterFifthStep() {
+        val four = (1..4).joinToString("") { "PASSO $it: Passo $it.\n" }
+        assertFalse(TriagePrompt.hasAllSteps("TITULO: T\n${four}PASSO 5: Pas"))
+        assertTrue(TriagePrompt.hasAllSteps("TITULO: T\n${four}PASSO 5: Passo 5.\n"))
+    }
 }

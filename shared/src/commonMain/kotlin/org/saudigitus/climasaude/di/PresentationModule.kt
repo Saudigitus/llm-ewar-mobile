@@ -8,5 +8,5 @@ import org.saudigitus.climasaude.presentation.triage.TriageViewModel
 
 internal val presentationModule: Module = module {
     viewModel { AppViewModel(get(), get(), get(), get()) }
-    viewModel { TriageViewModel(get(), get(), get()) }
+    viewModel { TriageViewModel(get(), get(), get(), get()) }
 }

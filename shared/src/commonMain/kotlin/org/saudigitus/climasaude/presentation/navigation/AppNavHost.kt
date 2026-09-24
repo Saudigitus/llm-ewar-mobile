@@ -1,6 +1,7 @@
 package org.saudigitus.climasaude.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -103,8 +104,17 @@ fun AppNavHost(
         }
 
         composable<NewChildRoute> {
-            LaunchedEffect(Unit) { triageViewModel.clearError() }
-            NewChildForm(triageState, triageViewModel::addChild)
+            LaunchedEffect(Unit) {
+                triageViewModel.clearError()
+                triageViewModel.clearLocation()
+                triageViewModel.startLocation(askPermission = false)
+            }
+            DisposableEffect(Unit) { onDispose { triageViewModel.stopLocation() } }
+            NewChildForm(
+                triageState,
+                { triageViewModel.startLocation(askPermission = true) },
+                triageViewModel::addChild
+            )
         }
 
         composable<NewTriageRoute> { entry ->
@@ -128,12 +138,13 @@ fun AppNavHost(
             val selected = triageState.selectedTriageId == route.triageId
             TriageDetailScreen(
                 triage,
-                triageState.child(route.childId)?.child,
                 route.hasSaved,
                 onViewHistory = { navController.popBackStack() },
                 language = if (selected) triageState.recommendationLanguage else AppLanguage.PORTUGUESE,
                 translating = selected && triageState.translating,
                 translationError = triageState.translationError.takeIf { selected },
+                generating = route.triageId in triageState.generatingIds,
+                draft = triageState.drafts[route.triageId],
                 onTranslate = triageViewModel::translateRecommendation
             )
         }

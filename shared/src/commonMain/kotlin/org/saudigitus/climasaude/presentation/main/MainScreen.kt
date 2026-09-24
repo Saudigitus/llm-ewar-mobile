@@ -28,6 +28,7 @@ import org.saudigitus.climasaude.presentation.app.AppViewModel
 import org.saudigitus.climasaude.presentation.components.AddButton
 import org.saudigitus.climasaude.presentation.components.ClimaSaudeBottomBar
 import org.saudigitus.climasaude.presentation.components.ClimaSaudeTopBar
+import org.saudigitus.climasaude.presentation.main.navigation.subtitle
 import org.saudigitus.climasaude.presentation.main.navigation.title
 import org.saudigitus.climasaude.presentation.main.navigation.topLevelDestination
 import org.saudigitus.climasaude.presentation.navigation.AlertDetailRoute
@@ -64,7 +65,7 @@ fun MainScreen(
         topBar = {
             ClimaSaudeTopBar(
                 title = entry?.title(triageState) ?: UiText.appName,
-                subtitle = null,
+                subtitle = entry?.subtitle(triageState),
                 onBack = if (topLevel == null) ({ navController.navigateUp() }) else null,
                 syncing = appState.syncing,
                 onSync = if (topLevel != null) appViewModel::syncNow else null

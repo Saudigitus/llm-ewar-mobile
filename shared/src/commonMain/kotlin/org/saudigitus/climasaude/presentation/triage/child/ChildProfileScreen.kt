@@ -29,6 +29,8 @@ import org.saudigitus.climasaude.presentation.theme.Muted
 import org.saudigitus.climasaude.presentation.theme.Teal
 import org.saudigitus.climasaude.presentation.triage.child.components.DemographicRow
 import org.saudigitus.climasaude.presentation.triage.child.components.TriageHistoryCard
+import org.saudigitus.climasaude.utils.text.coordinates
+import org.saudigitus.climasaude.utils.text.precision
 import org.saudigitus.climasaude.utils.text.shortDate
 
 @Composable
@@ -62,7 +64,15 @@ fun ChildProfileScreen(
                     DemographicRow(
                         "Cuidador",
                         item.child.caregiver?.takeIf { it.isNotBlank() } ?: "Não informado")
-                    DemographicRow(
+                    val latitude = item.child.latitude
+                    val longitude = item.child.longitude
+                    if (latitude != null && longitude != null) {
+                        DemographicRow("Coordenadas", coordinates(latitude, longitude))
+                        DemographicRow(
+                            "Precisão",
+                            precision(item.child.locationAccuracy).removePrefix("Precisão: ")
+                        )
+                    } else DemographicRow(
                         "Localidade",
                         item.child.community?.takeIf { it.isNotBlank() } ?: "Não informada")
                     DemographicRow("Registada em", shortDate(item.child.createdAt))
