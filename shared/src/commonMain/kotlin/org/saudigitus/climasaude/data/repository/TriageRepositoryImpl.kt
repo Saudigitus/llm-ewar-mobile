@@ -2,6 +2,9 @@ package org.saudigitus.climasaude.data.repository
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.transformWhile
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -11,6 +14,8 @@ import org.saudigitus.climasaude.data.local.dao.ChildDao
 import org.saudigitus.climasaude.data.local.dao.ProfileDao
 import org.saudigitus.climasaude.data.local.dao.TriageDao
 import org.saudigitus.climasaude.data.local.dao.TriageTranslationDao
+import org.saudigitus.climasaude.data.local.entity.ChildEntity
+import org.saudigitus.climasaude.data.local.entity.ProfileEntity
 import org.saudigitus.climasaude.data.local.entity.TriageEntity
 import org.saudigitus.climasaude.data.local.entity.TriageTranslationEntity
 import org.saudigitus.climasaude.data.mapper.decodeStringList
@@ -27,6 +32,7 @@ import org.saudigitus.climasaude.domain.model.TriageGuidance
 import org.saudigitus.climasaude.domain.repository.TriageRepository
 import org.saudigitus.climasaude.platform.AutoSyncScheduler
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 class TriageRepositoryImpl(
@@ -86,26 +92,59 @@ class TriageRepositoryImpl(
             profile.demo
         )
         triageDao.insert(entity)
-        val areaId = child.areaId ?: areaDao.forUser(profile.id).singleOrNull()?.id
-        val alerts = areaId?.let { alertDao.forArea(it) }.orEmpty()
-            .filter { profile.demo || !it.demo }
-        val matching = TriagePrompt.matchingAlerts(entity, alerts)
-        val alertIds = matching.map { it.id }
-        val guidance = runCatching {
-            model.complete(TriagePrompt.recommendation(child, entity, matching))
-        }.getOrNull()
-            ?.let { TriagePrompt.parse(it, "IA local · confirmar com o protocolo APE", alertIds) }
-            ?.takeIf { !dangerSigns || TriagePrompt.hasUrgentReferral(it) }
-            ?: recommendationEngine.guidance(
-                fever, dangerSigns, malariaTest, referred, matching.map { it.level }, alertIds
-            )
+        val matching = matchingAlerts(profile, child, entity)
+        val guidance = recommendationEngine.guidance(
+            fever, dangerSigns, malariaTest, referred, matching.map { it.level }, matching.map { it.id }
+        )
         triageDao.saveRecommendation(
             profile.id, id, guidance.title, guidance.body, guidance.source,
             encodeStringList(guidance.steps), encodeStringList(guidance.alertIds)
         )
-        if (!profile.demo) runCatching { autoSyncScheduler.requestSync() }
         return triageDao.find(profile.id, id)!!.toDomain(emptyList())
     }
+
+    override suspend fun refineRecommendation(
+        triageId: String,
+        onDraft: (TriageGuidance) -> Unit
+    ): Boolean {
+        val profile = profileDao.active() ?: return false
+        try {
+            val triage = triageDao.find(profile.id, triageId) ?: return false
+            val current = triage.recommendationSource ?: return false
+            if (current == AI_SOURCE) return false
+            val child = childDao.find(profile.id, triage.childId) ?: return false
+            val matching = matchingAlerts(profile, child, triage)
+            var text = ""
+            val finished = withTimeoutOrNull(RECOMMENDATION_TIMEOUT) {
+                model.stream(TriagePrompt.recommendation(child, triage, matching))
+                    .transformWhile { emit(it); !TriagePrompt.hasAllSteps(it) }
+                    .catch { }
+                    .collect { partial ->
+                        text = partial
+                        TriagePrompt.draft(partial)?.let(onDraft)
+                    }
+            } != null
+            val usable = if (finished && !TriagePrompt.hasAllSteps(text)) text
+            else TriagePrompt.finishedLines(text)
+            val guidance = TriagePrompt.parse(usable, AI_SOURCE)
+                ?.takeIf { !triage.dangerSigns || TriagePrompt.hasUrgentReferral(it) }
+                ?: return false
+            val replaced = triageDao.replaceRecommendation(
+                profile.id, triageId, current, guidance.title, guidance.body, guidance.source,
+                encodeStringList(guidance.steps)
+            ) > 0
+            if (replaced) translationDao.deleteForTriage(profile.id, triageId)
+            return replaced
+        } finally {
+            if (!profile.demo) runCatching { autoSyncScheduler.requestSync() }
+        }
+    }
+
+    private suspend fun matchingAlerts(profile: ProfileEntity, child: ChildEntity, triage: TriageEntity) =
+        (child.areaId ?: areaDao.forUser(profile.id).singleOrNull()?.id)
+            ?.let { alertDao.forArea(it) }.orEmpty()
+            .filter { profile.demo || !it.demo }
+            .let { TriagePrompt.matchingAlerts(triage, it) }
 
     override suspend fun translate(triageId: String, language: AppLanguage): Boolean {
         if (language == AppLanguage.PORTUGUESE) return true
@@ -129,5 +168,10 @@ class TriageRepositoryImpl(
             )
         )
         return true
+    }
+
+    private companion object {
+        const val AI_SOURCE = "IA local · confirmar com o protocolo APE"
+        val RECOMMENDATION_TIMEOUT = 60.seconds
     }
 }

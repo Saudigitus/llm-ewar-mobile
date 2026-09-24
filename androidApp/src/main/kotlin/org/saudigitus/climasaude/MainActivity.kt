@@ -11,7 +11,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
@@ -36,9 +38,31 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    private var locationGrant: CompletableDeferred<Boolean>? = null
+    private val locationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            locationGrant?.complete(result.values.any { it })
+            locationGrant = null
+        }
+
+    private suspend fun requestLocationPermission(): Boolean {
+        locationGrant?.let { return it.await() }
+        val grant = CompletableDeferred<Boolean>()
+        locationGrant = grant
+        locationPermission.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+        return grant.await()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
-        // Light status-bar icons over the teal app bar and login header.
+        (application as ClimaSaudeApplication).locationProvider.permissionRequester =
+            ::requestLocationPermission
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         setContent {
             ClimaSaudeApp(onReadyForNotifications = {
@@ -52,5 +76,13 @@ class MainActivity : ComponentActivity() {
                 }
             })
         }
+    }
+
+    override fun onDestroy() {
+        val provider = (application as ClimaSaudeApplication).locationProvider
+        if (provider.permissionRequester == ::requestLocationPermission) provider.permissionRequester = null
+        locationGrant?.complete(false)
+        locationGrant = null
+        super.onDestroy()
     }
 }

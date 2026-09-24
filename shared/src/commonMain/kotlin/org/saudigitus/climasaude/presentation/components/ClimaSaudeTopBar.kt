@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -69,7 +70,10 @@ fun ClimaSaudeTopBar(
         },
         navigationIcon = {
             if (onBack != null) IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = UiText.close)
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = UiText.close
+                )
             }
         },
         actions = {
@@ -80,7 +84,7 @@ fun ClimaSaudeTopBar(
                     modifier = Modifier.padding(horizontal = 12.dp).size(24.dp)
                 )
                 else IconButton(onClick = onSync) {
-                    Icon(Icons.Filled.Refresh, contentDescription = UiText.sync)
+                    Icon(Icons.Default.Sync, contentDescription = UiText.sync)
                 }
             }
         },

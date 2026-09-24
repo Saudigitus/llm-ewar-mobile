@@ -12,6 +12,7 @@ import org.saudigitus.climasaude.presentation.navigation.TopLevelDestination
 import org.saudigitus.climasaude.presentation.navigation.TriageDetailRoute
 import org.saudigitus.climasaude.presentation.triage.TriageUiState
 import org.saudigitus.climasaude.utils.text.UiText
+import org.saudigitus.climasaude.utils.text.shortDate
 
 internal fun NavBackStackEntry.topLevelDestination(): TopLevelDestination? =
     TopLevelDestination.entries.firstOrNull { top ->
@@ -33,3 +34,12 @@ internal fun NavBackStackEntry.title(triageState: TriageUiState): String =
             TopLevelDestination.PROFILE -> UiText.settings
         }
     }
+
+internal fun NavBackStackEntry.subtitle(triageState: TriageUiState): String? {
+    if (!destination.hasRoute<TriageDetailRoute>()) return null
+    val route = toRoute<TriageDetailRoute>()
+    return listOfNotNull(
+        triageState.child(route.childId)?.child?.name,
+        triageState.triage(route.triageId)?.let { shortDate(it.recordedAt) }
+    ).joinToString(" · ").ifEmpty { null }
+}

@@ -38,6 +38,17 @@ interface TriageDao {
         alertIds: String
     )
 
+    @Query("UPDATE triages SET recommendationTitle = :title, recommendationBody = :body, recommendationSource = :source, recommendationSteps = :steps, syncedAt = NULL WHERE id = :id AND userId = :userId AND recommendationSource = :replacing")
+    suspend fun replaceRecommendation(
+        userId: String,
+        id: String,
+        replacing: String,
+        title: String,
+        body: String,
+        source: String,
+        steps: String
+    ): Int
+
     @Query("UPDATE triages SET syncedAt = :syncedAt WHERE id = :id AND userId = :userId")
     suspend fun markSynced(userId: String, id: String, syncedAt: String)
 }

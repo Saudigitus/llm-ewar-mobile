@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_background">#0D5B58</color>
+
+    <style name="Theme.ClimaSaude" parent="@android:style/Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.ClimaSaude.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.ClimaSaude</item>
+    </style>
+</resources>

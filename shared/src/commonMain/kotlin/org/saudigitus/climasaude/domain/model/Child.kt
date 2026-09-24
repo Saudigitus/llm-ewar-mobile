@@ -10,5 +10,8 @@ data class Child(
     val caregiver: String? = null,
     val community: String? = null,
     val syncedAt: String? = null,
-    val areaId: String? = null
+    val areaId: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val locationAccuracy: Double? = null
 )

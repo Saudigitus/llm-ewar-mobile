@@ -37,6 +37,7 @@ kotlin {
             implementation(libs.lifecycle.viewmodel)
             implementation(libs.navigation.compose)
             implementation(libs.material.icons.core)
+            implementation(libs.material.icons.extended)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

@@ -44,6 +44,14 @@ val profileLanguageMigration = object : Migration(5, 6) {
     }
 }
 
+val childLocationMigration = object : Migration(6, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `children` ADD COLUMN `latitude` REAL")
+        connection.execSQL("ALTER TABLE `children` ADD COLUMN `longitude` REAL")
+        connection.execSQL("ALTER TABLE `children` ADD COLUMN `locationAccuracy` REAL")
+    }
+}
+
 /** Every schema migration, in version order. Append new migrations here. */
 val ALL_MIGRATIONS: Array<Migration> =
     arrayOf(
@@ -51,5 +59,6 @@ val ALL_MIGRATIONS: Array<Migration> =
         followUpMigration,
         guidanceMigration,
         childAreaMigration,
-        profileLanguageMigration
+        profileLanguageMigration,
+        childLocationMigration
     )

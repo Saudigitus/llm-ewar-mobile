@@ -37,6 +37,7 @@ android {
 dependencies {
     implementation(project(":shared"))
     implementation(libs.activity.compose)
+    implementation(libs.core.splashscreen)
     implementation(libs.work.runtime)
     implementation(libs.koin.core)
     implementation(libs.room.runtime)

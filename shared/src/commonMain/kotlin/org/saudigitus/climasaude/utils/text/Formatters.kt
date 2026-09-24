@@ -4,6 +4,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.saudigitus.climasaude.domain.model.AppLanguage
 import org.saudigitus.climasaude.domain.model.RiskLevel
+import kotlin.math.abs
+import kotlin.math.round
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -37,4 +39,18 @@ fun languageLabel(language: AppLanguage): String = when (language) {
     AppLanguage.PORTUGUESE -> UiText.portuguese
     AppLanguage.XICHANGANA -> UiText.xichangana
     AppLanguage.EMAKHUWA -> UiText.emakhuwa
+}
+
+internal fun coordinates(latitude: Double, longitude: Double): String =
+    "${decimal(latitude, 6)}, ${decimal(longitude, 6)}"
+
+internal fun precision(accuracyMeters: Double?): String =
+    accuracyMeters?.let { "Precisão: ±${round(it).toLong()} m" } ?: "Precisão: desconhecida"
+
+private fun decimal(value: Double, places: Int): String {
+    var factor = 1L
+    repeat(places) { factor *= 10 }
+    val scaled = round(abs(value) * factor).toLong()
+    val sign = if (value < 0 && scaled != 0L) "-" else ""
+    return "$sign${scaled / factor}.${(scaled % factor).toString().padStart(places, '0')}"
 }
